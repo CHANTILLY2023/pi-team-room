@@ -27,20 +27,61 @@ PI is still the extension host. PI provider models are a separate connector, and
 
 ## Install
 
-After the final package name is confirmed and published:
+Current GitHub/source install:
+
+```bash
+git clone https://github.com/CHANTILLY2023/pi-team-room.git
+cd pi-team-room
+node install.mjs setup
+pi
+```
+
+Inside PI:
+
+```text
+/team doctor
+/team web
+```
+
+The setup helper copies the extension to `~/.pi/agent/extensions/pi-team-room`,
+backs up an existing local copy, and leaves project data under `.pi/messenger/`
+untouched. It excludes `.git`, `.pi`, `.pi-subagents`, `work`, lockfiles,
+`node_modules` and env files.
+
+Check a machine without installing:
+
+```bash
+node install.mjs doctor
+```
+
+Remove only the installed extension copy:
+
+```bash
+node install.mjs uninstall
+```
+
+After npm publication, the short form will be:
+
+```bash
+npx pi-team-room setup
+pi
+```
+
+or, if your PI version supports native package installs for this package:
 
 ```bash
 pi install npm:pi-team-room
+pi
 ```
 
-Local checkout for development:
+Development-only checkout run:
 
 ```bash
-cd /path/to/pi-team-room
 pi --no-extensions --extension ./team-runtime/standalone-extension.ts
 ```
 
-The legacy `npx pi-team-room` helper does not write to `~/.pi` by default. It only prints guidance. `--legacy-copy` exists for isolated compatibility testing and should not be used alongside PI's native package install.
+The compatibility flag `--legacy-copy` is still accepted as an alias for
+`setup`, but new users should not need it.
 
 ## First Run
 
@@ -123,6 +164,7 @@ npm test
 npm run typecheck
 npm run typecheck:tests
 npm pack --dry-run --json --ignore-scripts
+node install.mjs doctor
 ```
 
 Real connector probes can spend account quota. Do not run them without an explicit test scope.

@@ -1,13 +1,15 @@
 # Open-Source Release Checklist
 
-Status: preparation in progress. Publishing is not authorized yet.
+Status: public GitHub repository is available; npm publishing is not authorized yet.
 
 ## Identity
 
 - [x] Candidate package name changed to `pi-team-room`.
 - [x] Package is `private: true` to prevent accidental npm publication.
 - [x] Public PI extension entry points to `team-runtime/standalone-extension.ts`.
-- [ ] Maintainer confirms final package name, GitHub repository, npm owner and issue URL.
+- [x] Public GitHub repository created with a clean initial history:
+  `https://github.com/CHANTILLY2023/pi-team-room`.
+- [ ] Maintainer confirms npm owner and issue URL before npm publication.
 
 ## License And Attribution
 
@@ -21,7 +23,8 @@ Status: preparation in progress. Publishing is not authorized yet.
 - [x] `.pi-subagents/` ignored.
 - [x] npm package whitelist excludes internal retrospective docs.
 - [x] README and SECURITY warn against publishing `.pi/`, `.pi-subagents/`, `work/`, tokens, PINs and connector config.
-- [ ] Before public Git push, audit Git history for secrets and decide whether to publish a cleaned history or a fresh repository.
+- [x] Public Git push used a fresh repository generated from the npm package
+  whitelist, not the working repository's dirty history.
 
 ## Runtime Behavior
 
@@ -33,8 +36,13 @@ Status: preparation in progress. Publishing is not authorized yet.
 
 ## Package And Install
 
-- [x] Legacy `npx` helper no longer writes to `~/.pi` by default.
+- [x] CLI helper supports `setup`, `doctor` and `uninstall` for source/GitHub
+  installs.
+- [x] Helper still does not write to `~/.pi` by default; installation requires
+  explicit `setup` or the compatibility `--legacy-copy` alias.
 - [x] `--legacy-copy` excludes `.pi`, `.pi-subagents`, `work`, lockfiles and scratch files.
+- [x] Local setup backs up an existing extension copy before replacing it and
+  uninstall leaves project `.pi/messenger/` data untouched.
 - [x] `npm pack --dry-run --ignore-scripts` reviewed: 86 files, no `.pi`, `.pi-subagents`, `work` or internal retrospective docs.
 - [x] Local tarball install smoke passed in a temporary project with `--ignore-scripts`.
 - [ ] Clean temporary HOME install with PI native package flow after final package name is confirmed.

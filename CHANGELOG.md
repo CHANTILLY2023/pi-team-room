@@ -13,12 +13,18 @@
   rebound when capability discovery refreshes.
 - The legacy `npx` helper now prints install guidance by default. Files are
   copied to `~/.pi` only when `--legacy-copy` is passed explicitly.
+- The installer helper now has user-facing `setup`, `doctor` and `uninstall`
+  commands for GitHub/source installs. `setup` backs up an existing local
+  extension copy, `doctor` checks local commands without model calls, and
+  `uninstall` leaves project Team history untouched.
 
 ### Added
 - Added MIT LICENSE, NOTICE, SECURITY, CONTRIBUTING, architecture, privacy and
   open-source release checklist documents.
 - Added regressions for Codex+Grok-only first-run defaults, later CLI installs
   not mutating existing members, and safe legacy-copy exclusions.
+- Added installer regressions for terminal doctor, explicit setup, backup on
+  update and safe uninstall.
 
 ## [0.15.0] - 2026-07-30
 

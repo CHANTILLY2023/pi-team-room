@@ -3,8 +3,9 @@
 /**
  * PI Team Room installer helper.
  *
- * PI's native package flow is the supported install path. The legacy copy mode
- * is kept only for isolated compatibility tests and must be requested explicitly.
+ * `setup` is an explicit, local-only install flow for GitHub/source checkouts.
+ * It copies the public package files into PI's extension directory and keeps
+ * PI's native package install path compatible when npm publication is enabled.
  */
 
 import * as fs from "node:fs";
@@ -42,30 +43,237 @@ const DEPRECATED_AGENTS = [
 ];
 
 const args = process.argv.slice(2);
-const isRemove = args.includes("--remove") || args.includes("-r");
-const isLegacyCopy = args.includes("--legacy-copy");
-const isCrewInstall = args.includes("--crew-install");
-const isCrewUninstall = args.includes("--crew-uninstall");
-const isHelp = args.includes("--help") || args.includes("-h");
+const command = args.find((arg) => !arg.startsWith("-")) ?? "";
+const flags = new Set(args.filter((arg) => arg.startsWith("-")));
+const isHelp = command === "help" || flags.has("--help") || flags.has("-h");
+const isSetup = command === "setup" || command === "install" || flags.has("--legacy-copy");
+const isDoctor = command === "doctor";
+const isRemove = command === "uninstall" || command === "remove" || flags.has("--remove") || flags.has("-r");
+const isLegacyCopy = flags.has("--legacy-copy");
+const isCrewInstall = flags.has("--crew-install");
+const isCrewUninstall = flags.has("--crew-uninstall");
+const isForce = flags.has("--force");
+
+const CONNECTORS = [
+	{ id: "pi", label: "PI host", command: "pi" },
+	{ id: "codex-cli", label: "Codex CLI", command: process.env.PI_TEAM_CODEX_COMMAND || "codex" },
+	{ id: "grok-build", label: "Grok Build CLI", command: process.env.PI_TEAM_GROK_COMMAND || "grok" },
+	{ id: "kimi-code", label: "Kimi Code CLI", command: process.env.PI_TEAM_KIMI_COMMAND || "kimi" },
+	{ id: "claude-code", label: "Claude Code CLI", command: process.env.PI_TEAM_CLAUDE_COMMAND || "claude" },
+];
 
 function printHelp() {
 	console.log(`${PACKAGE_NAME} v${VERSION} - Persistent PI Team Room
 
 Usage:
-  npx ${PACKAGE_NAME}                  Print PI native install guidance
-  npx ${PACKAGE_NAME} --legacy-copy    Copy this package to ${EXTENSION_DIR}
-  npx ${PACKAGE_NAME} --remove         Remove the legacy copy for this package
+  npx ${PACKAGE_NAME} setup            Install/update this extension for local PI
+  npx ${PACKAGE_NAME} doctor           Check PI and optional connector commands
+  npx ${PACKAGE_NAME} uninstall        Remove the local extension copy
+  npx ${PACKAGE_NAME}                  Print quick start guidance
+  npx ${PACKAGE_NAME} --legacy-copy    Compatibility alias for setup
+  npx ${PACKAGE_NAME} --remove         Compatibility alias for uninstall
   npx ${PACKAGE_NAME} --crew-install   Show packaged Crew agent info
   npx ${PACKAGE_NAME} --crew-uninstall Remove legacy Crew agent copies
   npx ${PACKAGE_NAME} --help           Show this help
 
-Team Runtime first run inside PI:
+After setup:
+  pi
   /team doctor
   /team web`);
 }
 
+function compareVersions(actual, required) {
+	const a = String(actual).replace(/^v/, "").split(".").map((part) => Number.parseInt(part, 10) || 0);
+	const b = String(required).replace(/^v/, "").split(".").map((part) => Number.parseInt(part, 10) || 0);
+	for (let index = 0; index < Math.max(a.length, b.length); index++) {
+		const left = a[index] ?? 0;
+		const right = b[index] ?? 0;
+		if (left > right) return 1;
+		if (left < right) return -1;
+	}
+	return 0;
+}
+
+function commandExists(commandPath) {
+	if (!commandPath) return false;
+	if (commandPath.includes(path.sep)) {
+		try {
+			fs.accessSync(commandPath, fs.constants.X_OK);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+	const pathEnv = process.env.PATH || "";
+	const extensions = process.platform === "win32"
+		? (process.env.PATHEXT || ".EXE;.CMD;.BAT;.COM").split(";")
+		: [""];
+	return pathEnv.split(path.delimiter).some((dir) => {
+		if (!dir) return false;
+		return extensions.some((ext) => {
+			try {
+				fs.accessSync(path.join(dir, `${commandPath}${ext}`), fs.constants.X_OK);
+				return true;
+			} catch {
+				return false;
+			}
+		});
+	});
+}
+
+function hasNativePackageInstall() {
+	if (fs.existsSync(NATIVE_PACKAGE_DIR)) return true;
+	try {
+		const settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8"));
+		const packages = Array.isArray(settings.packages) ? settings.packages : [];
+		return packages.some((item) => item === `npm:${PACKAGE_NAME}` || item === `github:CHANTILLY2023/${PACKAGE_NAME}`);
+	} catch {
+		return false;
+	}
+}
+
+function printGuidance() {
+	console.log(`${PACKAGE_NAME} v${VERSION}
+
+Quick start from a GitHub/source checkout:
+
+  node install.mjs setup
+  pi
+  /team doctor
+  /team web
+
+Check your machine without installing:
+
+  node install.mjs doctor
+
+After npm publication, PI's native package flow can be used instead:
+
+  pi install npm:${PACKAGE_NAME}
+
+This helper never scans or prints account secrets. It only copies this package
+when you explicitly run \`setup\` or \`--legacy-copy\`.`);
+}
+
+function printDoctor() {
+	const minNode = String(pkg.engines?.node ?? ">=22.19.0").replace(/^[^\d]*/, "") || "22.19.0";
+	const nodeOk = compareVersions(process.version, minNode) >= 0;
+	const extensionInstalled = fs.existsSync(EXTENSION_DIR);
+	const nativeInstalled = hasNativePackageInstall();
+
+	console.log(`${PACKAGE_NAME} doctor
+
+Package: ${PACKAGE_NAME} v${VERSION}
+Node:    ${process.version} ${nodeOk ? "ok" : `needs >=${minNode}`}
+Source:  ${PACKAGE_DIR}
+PI dir:  ${AGENT_DIR}
+
+Install:
+  local extension copy: ${extensionInstalled ? "installed" : "not installed"} (${EXTENSION_DIR})
+  native PI package:    ${nativeInstalled ? "configured" : "not configured"}
+
+Commands:`);
+
+	for (const connector of CONNECTORS) {
+		const exists = commandExists(connector.command);
+		console.log(`  ${exists ? "✓" : "✗"} ${connector.id.padEnd(12)} ${connector.label} (${connector.command})`);
+	}
+
+	console.log(`
+No model requests were sent. Connector authentication and remote model access
+are verified later by /team doctor probe commands inside PI.
+
+Next:
+  ${extensionInstalled || nativeInstalled ? "pi" : "node install.mjs setup"}
+  /team doctor
+  /team web`);
+}
+
+const SKIP = new Set([
+	".git",
+	"node_modules",
+	".DS_Store",
+	".pi",
+	".pi-subagents",
+	"work",
+	"progress.md",
+	"package-lock.json",
+	"npm-shrinkwrap.json",
+]);
+
+function copyDir(src, dest) {
+	fs.mkdirSync(dest, { recursive: true });
+	for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+		if (SKIP.has(entry.name)) continue;
+		const srcPath = path.join(src, entry.name);
+		const destPath = path.join(dest, entry.name);
+		if (entry.isDirectory()) copyDir(srcPath, destPath);
+		else fs.copyFileSync(srcPath, destPath);
+	}
+}
+
+function installLocalCopy() {
+	if (path.resolve(PACKAGE_DIR) === path.resolve(EXTENSION_DIR)) {
+		console.log(`Already installed at ${EXTENSION_DIR} (v${VERSION})`);
+		return;
+	}
+
+	if (hasNativePackageInstall() && !isForce) {
+		console.log(`${PACKAGE_NAME} is already configured through PI's native package flow.
+
+Run PI directly:
+
+  pi
+  /team web
+
+If you intentionally want to replace it with a local checkout copy, rerun with
+--force. Loading both native and local copies may register duplicate commands.`);
+		process.exit(1);
+	}
+
+	const isUpdate = fs.existsSync(EXTENSION_DIR);
+	const backupDir = isUpdate
+		? `${EXTENSION_DIR}.backup-${new Date().toISOString().replace(/[:.]/g, "-")}`
+		: "";
+
+	if (isUpdate && fs.existsSync(path.join(EXTENSION_DIR, ".git")) && !isForce) {
+		console.log(`Existing install looks like a git checkout:
+
+  ${EXTENSION_DIR}
+
+Rerun with --force to move it aside and install this package copy.`);
+		process.exit(1);
+	}
+
+	fs.mkdirSync(path.dirname(EXTENSION_DIR), { recursive: true });
+
+	try {
+		if (isUpdate) fs.renameSync(EXTENSION_DIR, backupDir);
+		copyDir(PACKAGE_DIR, EXTENSION_DIR);
+	} catch (error) {
+		fs.rmSync(EXTENSION_DIR, { recursive: true, force: true });
+		if (isUpdate && fs.existsSync(backupDir)) fs.renameSync(backupDir, EXTENSION_DIR);
+		throw error;
+	}
+
+	const action = isUpdate ? "Updated" : "Installed";
+	console.log(`${action} ${PACKAGE_NAME} v${VERSION} -> ${EXTENSION_DIR}${backupDir ? `\nBackup:     ${backupDir}` : ""}
+
+Start:
+  pi
+  /team doctor
+  /team web
+
+Data note: project Team history lives under each project's .pi/messenger/ and
+is not removed by installing or uninstalling this extension.`);
+}
+
 if (isHelp) {
 	printHelp();
+	process.exit(0);
+}
+
+if (isDoctor) {
+	printDoctor();
 	process.exit(0);
 }
 
@@ -102,96 +310,21 @@ if (isCrewUninstall) {
 if (isRemove) {
 	if (fs.existsSync(EXTENSION_DIR)) {
 		fs.rmSync(EXTENSION_DIR, { recursive: true });
-		console.log(`Removed ${PACKAGE_NAME} legacy copy from ${EXTENSION_DIR}`);
+		console.log(`Removed ${PACKAGE_NAME} local extension copy from ${EXTENSION_DIR}`);
 	} else {
-		console.log(`${PACKAGE_NAME} legacy copy is not installed`);
+		console.log(`${PACKAGE_NAME} local extension copy is not installed`);
 	}
+	console.log("Project Team history under .pi/messenger/ was not touched.");
 	process.exit(0);
 }
 
-if (!isLegacyCopy) {
-	console.log(`${PACKAGE_NAME} v${VERSION}
-
-Recommended install after the package name and repository are confirmed:
-
-  pi install npm:${PACKAGE_NAME}
-
-For local development in this checkout:
-
-  pi --no-extensions --extension ./team-runtime/standalone-extension.ts
-
-This helper does not write to ~/.pi by default. The legacy copy installer is
-available only with --legacy-copy, preferably in an isolated HOME during tests.`);
+if (!isSetup) {
+	printGuidance();
 	process.exit(0);
 }
 
-if (path.resolve(PACKAGE_DIR) === path.resolve(EXTENSION_DIR)) {
-	console.log(`Already installed at ${EXTENSION_DIR} (v${VERSION})`);
-	process.exit(0);
+if (isLegacyCopy) {
+	console.log("--legacy-copy is kept as a compatibility alias. Prefer: npx pi-team-room setup\n");
 }
 
-const isUpdate = fs.existsSync(EXTENSION_DIR);
-
-function hasNativePackageInstall() {
-	if (fs.existsSync(NATIVE_PACKAGE_DIR)) return true;
-	try {
-		const settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8"));
-		const packages = Array.isArray(settings.packages) ? settings.packages : [];
-		return packages.some((item) => item === `npm:${PACKAGE_NAME}`);
-	} catch {
-		return false;
-	}
-}
-
-if (hasNativePackageInstall()) {
-	console.log(`${PACKAGE_NAME} is already installed via PI's native package flow.
-
-Keep the native install and remove any legacy copy instead:
-
-  npx ${PACKAGE_NAME} --remove
-
-Do not run --legacy-copy alongside \`pi install npm:${PACKAGE_NAME}\`; loading
-both copies may register duplicate Team commands.`);
-	process.exit(1);
-}
-
-if (isUpdate && fs.existsSync(path.join(EXTENSION_DIR, ".git"))) {
-	console.log("Existing install is a git clone. Remove it first:\n");
-	console.log(`  npx ${PACKAGE_NAME} --remove && npx ${PACKAGE_NAME} --legacy-copy`);
-	process.exit(1);
-}
-
-if (isUpdate) fs.rmSync(EXTENSION_DIR, { recursive: true });
-
-const SKIP = new Set([
-	".git",
-	"node_modules",
-	".DS_Store",
-	".pi",
-	".pi-subagents",
-	"work",
-	"progress.md",
-	"package-lock.json",
-	"npm-shrinkwrap.json",
-]);
-
-function copyDir(src, dest) {
-	fs.mkdirSync(dest, { recursive: true });
-	for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-		if (SKIP.has(entry.name)) continue;
-		const srcPath = path.join(src, entry.name);
-		const destPath = path.join(dest, entry.name);
-		if (entry.isDirectory()) copyDir(srcPath, destPath);
-		else fs.copyFileSync(srcPath, destPath);
-	}
-}
-
-copyDir(PACKAGE_DIR, EXTENSION_DIR);
-
-const action = isUpdate ? "Updated" : "Installed";
-console.log(`${action} ${PACKAGE_NAME} v${VERSION} -> ${EXTENSION_DIR}
-
-Tool:       pi_team
-Team:       /team doctor, /team web
-Docs:       ${EXTENSION_DIR}/README.md
-Connectors: ${EXTENSION_DIR}/docs/runtime-connectors.md`);
+installLocalCopy();

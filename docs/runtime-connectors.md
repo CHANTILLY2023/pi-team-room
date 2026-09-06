@@ -5,13 +5,19 @@ Team Runtime connects to tools the user already has. It does not store third-par
 ## First Run
 
 ```text
-pi install npm:pi-team-room
+git clone https://github.com/CHANTILLY2023/pi-team-room.git
+cd pi-team-room
+node install.mjs setup
 pi
 /team doctor
 /team web
 ```
 
 `/team doctor` is local-only by default. It checks installed commands, the current PI model scope, each connector's model list, thinking levels, and the next setup step. It does not send a model request unless you explicitly ask for a probe.
+
+Before installing, `node install.mjs doctor` provides a terminal-only check for
+Node, PI and optional connector commands. It does not inspect account secrets and
+does not send model requests.
 
 To run a real two-turn hello probe:
 

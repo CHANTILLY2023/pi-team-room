@@ -6,6 +6,14 @@
   "type": "module",
   "author": "PI-team contributors; derived from pi-messenger by Nico Bailon",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CHANTILLY2023/pi-team-room.git"
+  },
+  "homepage": "https://github.com/CHANTILLY2023/pi-team-room#readme",
+  "bugs": {
+    "url": "https://github.com/CHANTILLY2023/pi-team-room/issues"
+  },
   "keywords": [
     "pi-package",
     "pi",
