@@ -11,6 +11,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -135,18 +136,18 @@ function hasNativePackageInstall() {
 function printGuidance() {
 	console.log(`${PACKAGE_NAME} v${VERSION}
 
-Quick start from a GitHub/source checkout:
+Quick start:
 
-  node install.mjs setup
+  npx ${PACKAGE_NAME} setup
   pi
   /team doctor
   /team web
 
 Check your machine without installing:
 
-  node install.mjs doctor
+  npx ${PACKAGE_NAME} doctor
 
-After npm publication, PI's native package flow can be used instead:
+PI's native package flow can be used instead when supported:
 
   pi install npm:${PACKAGE_NAME}
 
@@ -183,7 +184,7 @@ No model requests were sent. Connector authentication and remote model access
 are verified later by /team doctor probe commands inside PI.
 
 Next:
-  ${extensionInstalled || nativeInstalled ? "pi" : "node install.mjs setup"}
+  ${extensionInstalled || nativeInstalled ? "pi" : `npx ${PACKAGE_NAME} setup`}
   /team doctor
   /team web`);
 }
@@ -200,14 +201,38 @@ const SKIP = new Set([
 	"npm-shrinkwrap.json",
 ]);
 
+function shouldSkipCopyEntry(name) {
+	return SKIP.has(name) || name.startsWith(".env") || name.endsWith(".tgz");
+}
+
 function copyDir(src, dest) {
 	fs.mkdirSync(dest, { recursive: true });
 	for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-		if (SKIP.has(entry.name)) continue;
+		if (shouldSkipCopyEntry(entry.name)) continue;
 		const srcPath = path.join(src, entry.name);
 		const destPath = path.join(dest, entry.name);
 		if (entry.isDirectory()) copyDir(srcPath, destPath);
 		else fs.copyFileSync(srcPath, destPath);
+	}
+}
+
+function installRuntimeDependencies() {
+	const npmCommand = process.env.PI_TEAM_ROOM_NPM_COMMAND
+		|| (process.platform === "win32" ? "npm.cmd" : "npm");
+	const npmArgs = ["install", "--omit=dev", "--ignore-scripts"];
+	console.log(`Installing runtime dependencies in ${EXTENSION_DIR}`);
+	console.log(`  ${path.basename(npmCommand)} ${npmArgs.join(" ")}`);
+	const result = spawnSync(npmCommand, npmArgs, {
+		cwd: EXTENSION_DIR,
+		env: process.env,
+		stdio: "inherit",
+		timeout: 120_000,
+	});
+	if (result.error) {
+		throw result.error;
+	}
+	if (result.status !== 0) {
+		throw new Error(`Runtime dependency install failed with exit code ${result.status ?? "unknown"}`);
 	}
 }
 
@@ -249,6 +274,7 @@ Rerun with --force to move it aside and install this package copy.`);
 	try {
 		if (isUpdate) fs.renameSync(EXTENSION_DIR, backupDir);
 		copyDir(PACKAGE_DIR, EXTENSION_DIR);
+		installRuntimeDependencies();
 	} catch (error) {
 		fs.rmSync(EXTENSION_DIR, { recursive: true, force: true });
 		if (isUpdate && fs.existsSync(backupDir)) fs.renameSync(backupDir, EXTENSION_DIR);

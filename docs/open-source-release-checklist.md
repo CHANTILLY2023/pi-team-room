@@ -1,11 +1,13 @@
 # Open-Source Release Checklist
 
-Status: public GitHub repository is available; npm publishing is not authorized yet.
+Status: public GitHub repository is available; npm publication is the primary
+user install path.
 
 ## Identity
 
 - [x] Candidate package name changed to `pi-team-room`.
-- [x] Package is `private: true` to prevent accidental npm publication.
+- [x] Package is publishable with `private: false` and
+  `publishConfig.access=public`.
 - [x] Public PI extension entry points to `team-runtime/standalone-extension.ts`.
 - [x] Public GitHub repository created with a clean initial history:
   `https://github.com/CHANTILLY2023/pi-team-room`.
@@ -43,6 +45,10 @@ Status: public GitHub repository is available; npm publishing is not authorized 
 - [x] `--legacy-copy` excludes `.pi`, `.pi-subagents`, `work`, lockfiles and scratch files.
 - [x] Local setup backs up an existing extension copy before replacing it and
   uninstall leaves project `.pi/messenger/` data untouched.
+- [x] Setup installs runtime dependencies in the copied extension directory with
+  `npm install --omit=dev --ignore-scripts`.
+- [x] Recommended user install path is `npx pi-team-room setup`; source clone is
+  documented only for development.
 - [x] `npm pack --dry-run --ignore-scripts` reviewed: 86 files, no `.pi`, `.pi-subagents`, `work` or internal retrospective docs.
 - [x] Local tarball install smoke passed in a temporary project with `--ignore-scripts`.
 - [ ] Clean temporary HOME install with PI native package flow after final package name is confirmed.

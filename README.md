@@ -2,7 +2,7 @@
 
 PI Team Room is a PI extension for a mobile-first chat UI plus a persistent multi-model Team room. It keeps the simple `/` single-chat shell separate from `/team`, where each member has its own role profile, access method, model binding, thinking intent and physical session.
 
-This project is being prepared for open-source release. The package name `pi-team-room`, repository URL and npm publication are candidates until the maintainer confirms them. The package is marked `private: true` to prevent accidental publication during preparation.
+This package is published as `pi-team-room`. GitHub is the source and issue tracker; normal users should not need to clone the repository.
 
 ## What It Is
 
@@ -27,12 +27,10 @@ PI is still the extension host. PI provider models are a separate connector, and
 
 ## Install
 
-Current GitHub/source install:
+Recommended npm/npx install:
 
 ```bash
-git clone https://github.com/CHANTILLY2023/pi-team-room.git
-cd pi-team-room
-node install.mjs setup
+npx pi-team-room setup
 pi
 ```
 
@@ -44,37 +42,40 @@ Inside PI:
 ```
 
 The setup helper copies the extension to `~/.pi/agent/extensions/pi-team-room`,
+installs runtime dependencies there with `npm install --omit=dev --ignore-scripts`,
 backs up an existing local copy, and leaves project data under `.pi/messenger/`
 untouched. It excludes `.git`, `.pi`, `.pi-subagents`, `work`, lockfiles,
-`node_modules` and env files.
+`node_modules`, tarballs and env files.
 
 Check a machine without installing:
 
 ```bash
-node install.mjs doctor
+npx pi-team-room doctor
 ```
 
 Remove only the installed extension copy:
 
 ```bash
-node install.mjs uninstall
+npx pi-team-room uninstall
 ```
 
-After npm publication, the short form will be:
-
-```bash
-npx pi-team-room setup
-pi
-```
-
-or, if your PI version supports native package installs for this package:
+If your PI version supports native package installs for this package:
 
 ```bash
 pi install npm:pi-team-room
 pi
 ```
 
-Development-only checkout run:
+Development from source:
+
+```bash
+git clone https://github.com/CHANTILLY2023/pi-team-room.git
+cd pi-team-room
+node install.mjs setup
+pi
+```
+
+Development-only checkout run without installing:
 
 ```bash
 pi --no-extensions --extension ./team-runtime/standalone-extension.ts

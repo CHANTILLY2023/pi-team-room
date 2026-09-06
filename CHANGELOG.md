@@ -1,6 +1,21 @@
 # Changelog
 
-## [0.1.0] - Unreleased
+## [0.1.1] - 2026-09-06
+
+### Changed
+- Marked the package publishable for public npm distribution and made
+  `npx pi-team-room setup` the recommended install path.
+- The installer helper now has user-facing `setup`, `doctor` and `uninstall`
+  commands. `setup` backs up an existing local extension copy, installs runtime
+  dependencies in the copied PI extension directory with
+  `npm install --omit=dev --ignore-scripts`, `doctor` checks local commands
+  without model calls, and `uninstall` leaves project Team history untouched.
+
+### Added
+- Added installer coverage for runtime dependency install arguments and rollback
+  when dependency installation fails.
+
+## [0.1.0] - 2026-09-06
 
 ### Changed
 - Prepared the package as the standalone PI Team Room extension candidate
@@ -13,10 +28,6 @@
   rebound when capability discovery refreshes.
 - The legacy `npx` helper now prints install guidance by default. Files are
   copied to `~/.pi` only when `--legacy-copy` is passed explicitly.
-- The installer helper now has user-facing `setup`, `doctor` and `uninstall`
-  commands for GitHub/source installs. `setup` backs up an existing local
-  extension copy, `doctor` checks local commands without model calls, and
-  `uninstall` leaves project Team history untouched.
 
 ### Added
 - Added MIT LICENSE, NOTICE, SECURITY, CONTRIBUTING, architecture, privacy and

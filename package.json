@@ -1,7 +1,7 @@
 {
   "name": "pi-team-room",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.1",
+  "private": false,
   "description": "Mobile-first PI Team Room extension with persistent multi-model rooms",
   "type": "module",
   "author": "PI-team contributors; derived from pi-messenger by Nico Bailon",
@@ -13,6 +13,9 @@
   "homepage": "https://github.com/CHANTILLY2023/pi-team-room#readme",
   "bugs": {
     "url": "https://github.com/CHANTILLY2023/pi-team-room/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "pi-package",
