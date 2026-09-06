@@ -1,0 +1,16 @@
+PI Team Room
+
+This project is derived from pi-messenger by Nico Bailon, which is distributed
+under the MIT license according to the npm package metadata for pi-messenger.
+Keep this attribution and the MIT license text in source and package releases.
+
+The persistent Team protocol and UI behavior were informed by a source and
+design review of Clowder. The project does not vendor Clowder as a dependency.
+If future changes copy Clowder source code, audit and record the source license,
+commit and copied files before release.
+
+Publication status:
+
+- Package name: pi-team-room, candidate only.
+- Repository: not yet confirmed.
+- npm publication: not authorized.

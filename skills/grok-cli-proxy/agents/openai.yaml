@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grok CLI Proxy"
+  short_description: "Run Grok CLI with command-scoped local proxy only."
+  default_prompt: "Use Grok CLI with the project proxy wrapper."

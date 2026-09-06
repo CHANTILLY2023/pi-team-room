@@ -1,0 +1,79 @@
+{
+  "name": "pi-team-room",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mobile-first PI Team Room extension with persistent multi-model rooms",
+  "type": "module",
+  "author": "PI-team contributors; derived from pi-messenger by Nico Bailon",
+  "license": "MIT",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "messaging",
+    "multi-agent",
+    "coordination",
+    "ai",
+    "agents",
+    "cli"
+  ],
+  "bin": {
+    "pi-team-room": "install.mjs"
+  },
+  "files": [
+    "index.ts",
+    "install.mjs",
+    "crew/**",
+    "docs/architecture.md",
+    "docs/connector-contract.md",
+    "docs/open-source-release-checklist.md",
+    "docs/privacy-and-security.md",
+    "docs/runtime-connectors.md",
+    "docs/team-process-history.md",
+    "docs/team-web-share.md",
+    "team-runtime/**",
+    "skills/**",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "NOTICE",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.tests.json"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-agent-core": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0",
+    "typescript": "^7.0.2",
+    "vitest": "^2.1.8"
+  },
+  "pi": {
+    "extensions": [
+      "./team-runtime/standalone-extension.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "^0.16.0",
+    "smol-toml": "^1.6.0",
+    "qrcode-svg": "^1.1.0",
+    "ws": "^8.18.3"
+  }
+}

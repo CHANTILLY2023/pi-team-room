@@ -1,0 +1,10 @@
+node_modules/
+package-lock.json
+npm-shrinkwrap.json
+*.DS_Store
+.pi/
+.pi-subagents/
+.env
+.env.*
+work/
+progress.md
